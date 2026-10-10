@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('api', {
   bukaFolderData: panggil('folder:buka'),
   pulihkanBackupTerakhir: panggil('backup:pulihkanTerakhir'),
   pulihkanDariFile: panggil('backup:pulihkanDariFile'),
+  buatBackup: panggil('backup:buat'),
+  simpanCsv: panggil('csv:simpan'),
   tambahBarang: panggil('barang:tambah'),
   ubahBarang: panggil('barang:ubah'),
   hapusBarang: panggil('barang:hapus'),

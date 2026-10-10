@@ -126,3 +126,26 @@ test('daftar stok: filter, tanda menipis, dan ringkasan', () => {
     jenisBarang: 3, menipis: 1, transaksiHariIni: 1, masukHariIni: 1, keluarHariIni: 0,
   });
 });
+
+test('riwayat: filter barang, jenis, rentang tanggal, urut terbaru', () => {
+  let d = dataContoh();
+  d = L.tambahTransaksi(d, { jenis: 'masuk', barangId: 'b1', jumlah: '5', tanggal: '2026-10-01' }, 'r1', '2026-10-01T01:00:00Z', HARI);
+  d = L.tambahTransaksi(d, { jenis: 'masuk', barangId: 'b2', jumlah: '5', tanggal: '2026-10-05' }, 'r2', '2026-10-05T01:00:00Z', HARI);
+  d = L.tambahTransaksi(d, { jenis: 'keluar', barangId: 'b1', jumlah: '1', tanggal: '2026-10-05' }, 'r3', '2026-10-05T02:00:00Z', HARI);
+  d = L.tambahTransaksi(d, { jenis: 'keluar', barangId: 'b1', jumlah: '1', tanggal: '2026-10-09' }, 'r4', '2026-10-09T02:00:00Z', HARI);
+  assert.deepStrictEqual(L.daftarRiwayat(d).map((t) => t.id), ['r4', 'r3', 'r2', 'r1']);
+  assert.deepStrictEqual(L.daftarRiwayat(d, { barangId: 'b1' }).map((t) => t.id), ['r4', 'r3', 'r1']);
+  assert.deepStrictEqual(L.daftarRiwayat(d, { jenis: 'masuk' }).map((t) => t.id), ['r2', 'r1']);
+  assert.deepStrictEqual(L.daftarRiwayat(d, { dari: '2026-10-05', sampai: '2026-10-05' }).map((t) => t.id), ['r3', 'r2']);
+});
+
+test('CSV: pemisah titik koma, koma desimal, tanda kutip, cegah rumus', () => {
+  let d = L.tambahBarang(kosong(), { nama: 'Beras "Super"; 5kg', kategori: 'Sembako', satuan: 'kg', stokMinimum: '2,5' }, 'b1', WAKTU);
+  d = L.tambahTransaksi(d, { jenis: 'masuk', barangId: 'b1', jumlah: '1.250,5', tanggal: '2026-10-05', keterangan: '=1+1' }, 'c1', WAKTU, HARI);
+  const stok = L.csvStok(L.daftarStok(d));
+  assert.strictEqual(stok,
+    'Nama Barang;Kategori;Satuan;Stok Saat Ini;Stok Minimum;Status\r\n' +
+    '"Beras ""Super""; 5kg";Sembako;kg;1250,5;2,5;Aman\r\n');
+  const riwayat = L.csvRiwayat(d, L.daftarRiwayat(d));
+  assert.strictEqual(riwayat.split('\r\n')[1], `05/10/2026;Masuk;"Beras ""Super""; 5kg";Sembako;1250,5;kg;'=1+1`);
+});

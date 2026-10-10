@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { randomUUID } = require('crypto');
-const { Penyimpanan, tanggalLokal } = require('./src/penyimpanan');
+const { Penyimpanan, tanggalLokal, tulisAtomik } = require('./src/penyimpanan');
 const L = require('./src/logika');
 
 const FILE_TAMPILAN = path.join(__dirname, 'renderer', 'index.html');
@@ -170,6 +170,54 @@ async function pulihkanDariFile() {
   return terapkanPemulihan(data);
 }
 
+// ---------- Export & backup manual ----------
+
+async function simpanCsv({ jenis, filter } = {}) {
+  if (keadaan.status !== 'ok') return { ok: false, pesan: 'Data sedang bermasalah.' };
+  const data = keadaan.data;
+  const hariIni = tanggalLokal();
+  let isi;
+  let namaAwal;
+  if (jenis === 'stok') {
+    isi = L.csvStok(L.daftarStok(data, filter));
+    namaAwal = `stok-${hariIni}.csv`;
+  } else if (jenis === 'riwayat') {
+    isi = L.csvRiwayat(data, L.daftarRiwayat(data, filter));
+    namaAwal = `riwayat-transaksi-${hariIni}.csv`;
+  } else {
+    return { ok: false, pesan: 'Jenis export tidak dikenal.' };
+  }
+  const { canceled, filePath } = await dialog.showSaveDialog(jendela, {
+    title: 'Export CSV',
+    defaultPath: path.join(app.getPath('documents'), namaAwal),
+    filters: [{ name: 'File CSV (Excel)', extensions: ['csv'] }],
+  });
+  if (canceled || !filePath) return { ok: false, batal: true };
+  try {
+    // BOM UTF-8 supaya Excel membaca huruf dengan benar.
+    await fs.promises.writeFile(filePath, '\ufeff' + isi, 'utf8');
+  } catch (err) {
+    return { ok: false, pesan: `File tidak bisa disimpan: ${err.message}` };
+  }
+  return { ok: true, file: filePath };
+}
+
+async function buatBackupManual() {
+  if (keadaan.status !== 'ok') return { ok: false, pesan: 'Data sedang bermasalah.' };
+  const { canceled, filePath } = await dialog.showSaveDialog(jendela, {
+    title: 'Simpan Backup',
+    defaultPath: path.join(app.getPath('documents'), `CatatanStok-backup-${tanggalLokal()}.json`),
+    filters: [{ name: 'Backup Catatan Stok', extensions: ['json'] }],
+  });
+  if (canceled || !filePath) return { ok: false, batal: true };
+  try {
+    await tulisAtomik(filePath, JSON.stringify(keadaan.data, null, 2));
+  } catch (err) {
+    return { ok: false, pesan: `Backup tidak bisa disimpan: ${err.message}` };
+  }
+  return { ok: true, file: filePath };
+}
+
 // ---------- IPC ----------
 
 // Hanya terima pesan dari halaman aplikasi sendiri.
@@ -191,6 +239,8 @@ function daftarkanIpc() {
   });
   tangani('backup:pulihkanTerakhir', () => pulihkanBackupTerakhir());
   tangani('backup:pulihkanDariFile', () => pulihkanDariFile());
+  tangani('backup:buat', () => buatBackupManual());
+  tangani('csv:simpan', (opsi) => simpanCsv(opsi));
 
   tangani('barang:tambah', (input) =>
     ubahData((data) => L.tambahBarang(data, input, randomUUID(), new Date().toISOString()))

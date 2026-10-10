@@ -297,3 +297,10 @@ dl.info-lokasi dd { margin: 0; word-break: break-all; font-family: Consolas, "Co
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .notifikasi .pesan.galat { background: var(--merah); }
+
+/* ---------- Backup ---------- */
+.daftar-aksi { display: flex; flex-direction: column; gap: 14px; }
+.aksi-backup { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: center; }
+.aksi-backup .tombol { width: 100%; }
+.aksi-backup p { margin: 0; color: var(--teks-redup); }
+code { font-family: Consolas, "Courier New", monospace; font-size: 12px; background: #f0f2f5; padding: 1px 4px; border-radius: 4px; }

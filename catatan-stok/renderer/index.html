@@ -103,7 +103,35 @@
     </section>
 
     <!-- RIWAYAT -->
-    <section class="panel" id="panel-riwayat" role="tabpanel"></section>
+    <section class="panel" id="panel-riwayat" role="tabpanel">
+      <div class="kartu">
+        <div class="kepala-kartu">
+          <h2>Riwayat Transaksi</h2>
+          <button type="button" class="tombol" id="tombol-ekspor-riwayat">Export CSV</button>
+        </div>
+        <div class="baris-filter">
+          <label class="isian">Barang
+            <select id="riwayat-barang"></select>
+          </label>
+          <label class="isian">Jenis
+            <select id="riwayat-jenis">
+              <option value="">Semua</option>
+              <option value="masuk">Masuk</option>
+              <option value="keluar">Keluar</option>
+            </select>
+          </label>
+          <label class="isian">Dari tanggal
+            <input id="riwayat-dari" type="date">
+          </label>
+          <label class="isian">Sampai tanggal
+            <input id="riwayat-sampai" type="date">
+          </label>
+          <button type="button" class="tombol" id="tombol-reset-riwayat">Reset Filter</button>
+        </div>
+        <div class="wadah-tabel" id="tabel-riwayat"></div>
+        <p class="jumlah-baris" id="riwayat-jumlah"></p>
+      </div>
+    </section>
 
     <!-- BARANG -->
     <section class="panel" id="panel-barang" role="tabpanel">
@@ -152,8 +180,23 @@
         </dl>
         <p class="catatan">Backup otomatis dibuat setiap kali aplikasi dibuka (maksimal satu per hari) dan
           hanya 30 backup terbaru yang disimpan.</p>
-        <div class="baris-tombol">
-          <button class="tombol" id="tombol-buka-folder">Buka Folder Data</button>
+      </div>
+      <div class="kartu">
+        <h2>Backup &amp; Pemulihan</h2>
+        <div class="daftar-aksi">
+          <div class="aksi-backup">
+            <button class="tombol utama" id="tombol-buat-backup">Buat Backup Sekarang</button>
+            <p>Simpan salinan semua data ke lokasi pilihan Anda, misalnya flashdisk atau folder Google Drive/OneDrive.</p>
+          </div>
+          <div class="aksi-backup">
+            <button class="tombol bahaya" id="tombol-pulihkan">Pulihkan dari Backup</button>
+            <p>Ganti data saat ini dengan isi file backup. Data yang sekarang tetap disimpan sebagai cadangan
+              (<code>backup\sebelum-pulih-…json</code>).</p>
+          </div>
+          <div class="aksi-backup">
+            <button class="tombol" id="tombol-buka-folder">Buka Folder Data</button>
+            <p>Buka folder data dan backup di File Explorer.</p>
+          </div>
         </div>
       </div>
     </section>

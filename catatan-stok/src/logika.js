@@ -265,6 +265,76 @@
     };
   }
 
+  // ---------- Riwayat ----------
+
+  function daftarRiwayat(data, filter) {
+    const f = filter || {};
+    return data.transaksi
+      .filter((t) => {
+        if (f.barangId && t.barangId !== f.barangId) return false;
+        if (f.jenis && t.jenis !== f.jenis) return false;
+        if (f.dari && t.tanggal < f.dari) return false;
+        if (f.sampai && t.tanggal > f.sampai) return false;
+        return true;
+      })
+      .sort(urutkanTransaksiTerbaru);
+  }
+
+  // ---------- CSV ----------
+  // Pemisah titik koma dan koma desimal, sesuai Excel dengan pengaturan wilayah Indonesia.
+  // BOM UTF-8 ditambahkan saat file disimpan.
+
+  const PEMISAH_CSV = ';';
+
+  function selTeks(v) {
+    let s = String(v == null ? '' : v);
+    // Cegah teks dibaca Excel sebagai rumus.
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    if (/[";\r\n]/.test(s) || s.includes(PEMISAH_CSV)) s = `"${s.replace(/"/g, '""')}"`;
+    return s;
+  }
+
+  function selAngka(n) {
+    return String(n).replace('.', ',');
+  }
+
+  function barisCsv(kolom) {
+    return kolom.join(PEMISAH_CSV);
+  }
+
+  function csvStok(baris) {
+    const isi = [barisCsv(['Nama Barang', 'Kategori', 'Satuan', 'Stok Saat Ini', 'Stok Minimum', 'Status'].map(selTeks))];
+    for (const r of baris) {
+      isi.push(barisCsv([
+        selTeks(r.barang.nama),
+        selTeks(r.barang.kategori),
+        selTeks(r.barang.satuan),
+        selAngka(r.stok),
+        selAngka(r.barang.stokMinimum),
+        selTeks(r.menipis ? 'Stok menipis' : 'Aman'),
+      ]));
+    }
+    return isi.join('\r\n') + '\r\n';
+  }
+
+  function csvRiwayat(data, daftar) {
+    const peta = new Map(data.barang.map((b) => [b.id, b]));
+    const isi = [barisCsv(['Tanggal', 'Jenis', 'Nama Barang', 'Kategori', 'Jumlah', 'Satuan', 'Keterangan'].map(selTeks))];
+    for (const t of daftar) {
+      const b = peta.get(t.barangId) || { nama: '', kategori: '', satuan: '' };
+      isi.push(barisCsv([
+        formatTanggal(t.tanggal),
+        selTeks(JENIS[t.jenis]),
+        selTeks(b.nama),
+        selTeks(b.kategori),
+        selAngka(t.jumlah),
+        selTeks(b.satuan),
+        selTeks(t.keterangan),
+      ]));
+    }
+    return isi.join('\r\n') + '\r\n';
+  }
+
   return {
     tanggalHariIni,
     formatAngka,
@@ -289,5 +359,8 @@
     TANPA_KATEGORI,
     daftarStok,
     ringkasan,
+    daftarRiwayat,
+    csvStok,
+    csvRiwayat,
   };
 });

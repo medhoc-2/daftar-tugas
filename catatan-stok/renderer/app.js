@@ -35,7 +35,9 @@ function el(tag, atribut, ...anak) {
 
 function notifikasi(pesan, jenis = 'sukses') {
   const p = el('div', { class: `pesan ${jenis === 'galat' ? 'galat' : ''}`, text: pesan });
-  $('#notifikasi').append(p);
+  const wadah = $('#notifikasi');
+  wadah.append(p);
+  while (wadah.children.length > 4) wadah.firstElementChild.remove();
   setTimeout(() => p.remove(), jenis === 'galat' ? 6000 : 3000);
 }
 
@@ -79,6 +81,16 @@ function renderBackup() {
     ? `${L.formatAngka(info.backup.jumlah)} file, terakhir ${L.formatTanggal(info.backup.terakhir)}`
     : 'Belum ada';
 }
+
+$('#tombol-buat-backup').addEventListener('click', async () => {
+  const hasil = await layanan.buatBackup();
+  if (hasil.ok) notifikasi(`Backup disimpan: ${hasil.file}`);
+  else tanganiHasil(hasil);
+});
+
+$('#tombol-pulihkan').addEventListener('click', async () => {
+  setelahPemulihan(await layanan.pulihkanDariFile());
+});
 
 async function bukaFolderData() {
   tanganiHasil(await layanan.bukaFolderData());
@@ -451,12 +463,89 @@ $('#kartu-menipis').addEventListener('keydown', (e) => {
   }
 });
 
+// ---------- Riwayat ----------
+
+const BATAS_BARIS_RIWAYAT = 1000;
+
+function filterRiwayatSaatIni() {
+  return {
+    barangId: $('#riwayat-barang').value,
+    jenis: $('#riwayat-jenis').value,
+    dari: $('#riwayat-dari').value,
+    sampai: $('#riwayat-sampai').value,
+  };
+}
+
+function renderRiwayat() {
+  const data = keadaan.data;
+  const pilih = $('#riwayat-barang');
+  const sebelumnya = pilih.value;
+  pilih.replaceChildren(
+    el('option', { value: '', text: 'Semua barang' }),
+    ...[...data.barang].sort(L.urutkanNama).map((b) => el('option', { value: b.id, text: b.nama })),
+  );
+  pilih.value = L.cariBarang(data, sebelumnya) ? sebelumnya : '';
+
+  const f = filterRiwayatSaatIni();
+  const wadah = $('#tabel-riwayat');
+  const info = $('#riwayat-jumlah');
+  if (f.dari && f.sampai && f.dari > f.sampai) {
+    wadah.replaceChildren(el('div', { class: 'kosong', text: '"Dari tanggal" tidak boleh setelah "Sampai tanggal".' }));
+    info.textContent = '';
+    return;
+  }
+  const daftar = L.daftarRiwayat(data, f);
+  if (!daftar.length) {
+    wadah.replaceChildren(el('div', {
+      class: 'kosong',
+      text: data.transaksi.length ? 'Tidak ada transaksi yang cocok dengan filter.' : 'Belum ada transaksi.',
+    }));
+    info.textContent = '';
+    return;
+  }
+  wadah.replaceChildren(tabelTransaksi(daftar.slice(0, BATAS_BARIS_RIWAYAT), true));
+  info.textContent = daftar.length > BATAS_BARIS_RIWAYAT
+    ? `Menampilkan ${L.formatAngka(BATAS_BARIS_RIWAYAT)} transaksi terbaru dari ${L.formatAngka(daftar.length)}. ` +
+      'Persempit filter untuk melihat yang lain (Export CSV tetap berisi semuanya).'
+    : `${L.formatAngka(daftar.length)} transaksi.`;
+}
+
+['#riwayat-barang', '#riwayat-jenis', '#riwayat-dari', '#riwayat-sampai'].forEach((id) => {
+  $(id).addEventListener('change', renderRiwayat);
+});
+$('#tombol-reset-riwayat').addEventListener('click', () => {
+  $('#riwayat-barang').value = '';
+  $('#riwayat-jenis').value = '';
+  $('#riwayat-dari').value = '';
+  $('#riwayat-sampai').value = '';
+  renderRiwayat();
+});
+
+// ---------- Export CSV ----------
+
+async function eksporCsv(jenis, filter) {
+  const hasil = await layanan.simpanCsv({ jenis, filter });
+  if (hasil.ok) notifikasi(`File CSV disimpan: ${hasil.file}`);
+  else tanganiHasil(hasil);
+}
+
+$('#tombol-ekspor-stok').addEventListener('click', () => eksporCsv('stok', filterStokSaatIni()));
+$('#tombol-ekspor-riwayat').addEventListener('click', () => {
+  const f = filterRiwayatSaatIni();
+  if (f.dari && f.sampai && f.dari > f.sampai) {
+    notifikasi('Perbaiki rentang tanggal terlebih dahulu.', 'galat');
+    return;
+  }
+  eksporCsv('riwayat', f);
+});
+
 // ---------- Render ----------
 
 function renderSemua() {
   renderRingkasan();
   renderStok();
   renderTransaksi();
+  renderRiwayat();
   renderBarang();
   renderBackup();
   renderLayarRusak();
