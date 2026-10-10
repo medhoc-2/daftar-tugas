@@ -117,9 +117,115 @@ $('#rusak-pilih-file').addEventListener('click', async () => {
 });
 $('#rusak-buka-folder').addEventListener('click', bukaFolderData);
 
+// ---------- Barang ----------
+
+let idBarangDiedit = null;
+
+function isiDatalist(id, nilai) {
+  $(id).replaceChildren(...nilai.map((v) => el('option', { value: v })));
+}
+
+function aturModeFormBarang(barang) {
+  idBarangDiedit = barang ? barang.id : null;
+  $('#judul-form-barang').textContent = barang ? `Edit Barang: ${barang.nama}` : 'Tambah Barang';
+  $('#tombol-simpan-barang').textContent = barang ? 'Simpan Perubahan' : 'Tambah Barang';
+  $('#tombol-batal-edit').hidden = !barang;
+  $('#barang-nama').value = barang ? barang.nama : '';
+  $('#barang-kategori').value = barang ? barang.kategori : '';
+  $('#barang-satuan').value = barang ? barang.satuan : '';
+  $('#barang-minimum').value = barang ? L.formatAngka(barang.stokMinimum) : '';
+  renderBarang();
+  $('#barang-nama').focus();
+}
+
+function renderBarang() {
+  const data = keadaan.data;
+  isiDatalist('#daftar-kategori', L.daftarKategori(data));
+  isiDatalist('#daftar-satuan', L.daftarSatuan(data));
+
+  const cari = L.kunciNama($('#barang-cari').value);
+  const jumlahTransaksi = new Map();
+  for (const t of data.transaksi) jumlahTransaksi.set(t.barangId, (jumlahTransaksi.get(t.barangId) || 0) + 1);
+  const baris = data.barang
+    .filter((b) => !cari || L.kunciNama(b.nama).includes(cari) || L.kunciNama(b.kategori).includes(cari))
+    .sort(L.urutkanNama);
+
+  const wadah = $('#tabel-barang');
+  if (!baris.length) {
+    wadah.replaceChildren(el('div', {
+      class: 'kosong',
+      text: data.barang.length ? 'Tidak ada barang yang cocok.' : 'Belum ada barang. Tambahkan lewat form di atas.',
+    }));
+    return;
+  }
+  wadah.replaceChildren(el('table', {},
+    el('thead', {}, el('tr', {},
+      el('th', { text: 'Nama Barang' }),
+      el('th', { text: 'Kategori' }),
+      el('th', { text: 'Satuan' }),
+      el('th', { class: 'angka', text: 'Stok Minimum' }),
+      el('th', { class: 'angka', text: 'Transaksi' }),
+      el('th', { class: 'aksi', text: '' }),
+    )),
+    el('tbody', {}, baris.map((b) => {
+      const nTrans = jumlahTransaksi.get(b.id) || 0;
+      return el('tr', { class: b.id === idBarangDiedit ? 'sedang-diedit' : '' },
+        el('td', { text: b.nama }),
+        el('td', { text: b.kategori || '-' }),
+        el('td', { text: b.satuan }),
+        el('td', { class: 'angka', text: L.formatAngka(b.stokMinimum) }),
+        el('td', { class: 'angka', text: L.formatAngka(nTrans) }),
+        el('td', { class: 'aksi' },
+          el('button', { class: 'tombol kecil', type: 'button', text: 'Edit', onclick: () => aturModeFormBarang(b) }),
+          el('button', {
+            class: 'tombol kecil bahaya',
+            type: 'button',
+            text: 'Hapus',
+            disabled: nTrans > 0,
+            title: nTrans > 0 ? 'Tidak bisa dihapus karena sudah punya transaksi' : 'Hapus barang',
+            onclick: () => hapusBarang(b),
+          }),
+        ),
+      );
+    })),
+  ));
+}
+
+async function hapusBarang(b) {
+  const setuju = await layanan.konfirmasi({
+    judul: 'Hapus Barang',
+    pesan: `Hapus barang "${b.nama}"?`,
+    detail: 'Barang yang dihapus tidak bisa dikembalikan (kecuali dari backup).',
+    tombolYa: 'Hapus',
+    bahaya: true,
+  });
+  if (!setuju) return;
+  if (tanganiHasil(await layanan.hapusBarang(b.id), `Barang "${b.nama}" dihapus.`) && idBarangDiedit === b.id) {
+    aturModeFormBarang(null);
+  }
+}
+
+$('#form-barang').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = {
+    nama: $('#barang-nama').value,
+    kategori: $('#barang-kategori').value,
+    satuan: $('#barang-satuan').value,
+    stokMinimum: $('#barang-minimum').value,
+  };
+  const sedangEdit = idBarangDiedit;
+  const hasil = sedangEdit ? await layanan.ubahBarang(sedangEdit, input) : await layanan.tambahBarang(input);
+  if (tanganiHasil(hasil, sedangEdit ? 'Perubahan barang disimpan.' : `Barang "${L.rapikan(input.nama)}" ditambahkan.`)) {
+    aturModeFormBarang(null);
+  }
+});
+$('#tombol-batal-edit').addEventListener('click', () => aturModeFormBarang(null));
+$('#barang-cari').addEventListener('input', renderBarang);
+
 // ---------- Render ----------
 
 function renderSemua() {
+  renderBarang();
   renderBackup();
   renderLayarRusak();
 }

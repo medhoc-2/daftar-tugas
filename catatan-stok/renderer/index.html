@@ -50,7 +50,39 @@
     <section class="panel" id="panel-riwayat" role="tabpanel"></section>
 
     <!-- BARANG -->
-    <section class="panel" id="panel-barang" role="tabpanel"></section>
+    <section class="panel" id="panel-barang" role="tabpanel">
+      <div class="kartu">
+        <h2 id="judul-form-barang">Tambah Barang</h2>
+        <form id="form-barang" class="form-grid" autocomplete="off" novalidate>
+          <label class="isian lebar">Nama barang
+            <input id="barang-nama" maxlength="100" required placeholder="mis. Gula Pasir 1 kg">
+          </label>
+          <label class="isian">Kategori
+            <input id="barang-kategori" maxlength="60" list="daftar-kategori" placeholder="mis. Sembako">
+          </label>
+          <label class="isian">Satuan
+            <input id="barang-satuan" maxlength="20" list="daftar-satuan" required placeholder="pcs / dus / kg">
+          </label>
+          <label class="isian">Stok minimum
+            <input id="barang-minimum" inputmode="decimal" placeholder="0">
+          </label>
+          <div class="baris-tombol rapat">
+            <button type="submit" class="tombol utama" id="tombol-simpan-barang">Tambah Barang</button>
+            <button type="button" class="tombol" id="tombol-batal-edit" hidden>Batal</button>
+          </div>
+        </form>
+        <datalist id="daftar-kategori"></datalist>
+        <datalist id="daftar-satuan"></datalist>
+      </div>
+      <div class="kartu">
+        <div class="kepala-kartu">
+          <h2>Daftar Barang</h2>
+          <input id="barang-cari" type="search" placeholder="Cari nama barang…" class="cari-kecil">
+        </div>
+        <div class="wadah-tabel" id="tabel-barang"></div>
+        <p class="catatan">Barang yang sudah punya transaksi tidak bisa dihapus.</p>
+      </div>
+    </section>
 
     <!-- BACKUP -->
     <section class="panel" id="panel-backup" role="tabpanel">

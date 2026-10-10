@@ -167,6 +167,8 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
 .baris-filter .cari { flex: 1; min-width: 220px; }
 
 .baris-tombol { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.baris-tombol.rapat { margin-top: 0; }
+.cari-kecil { width: 260px; }
 
 /* ---------- Tombol ---------- */
 .tombol {

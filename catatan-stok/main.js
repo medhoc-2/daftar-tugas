@@ -4,7 +4,9 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, shell, session } = require('e
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { randomUUID } = require('crypto');
 const { Penyimpanan, tanggalLokal } = require('./src/penyimpanan');
+const L = require('./src/logika');
 
 const FILE_TAMPILAN = path.join(__dirname, 'renderer', 'index.html');
 const URL_TAMPILAN = pathToFileURL(FILE_TAMPILAN).href;
@@ -189,6 +191,12 @@ function daftarkanIpc() {
   });
   tangani('backup:pulihkanTerakhir', () => pulihkanBackupTerakhir());
   tangani('backup:pulihkanDariFile', () => pulihkanDariFile());
+
+  tangani('barang:tambah', (input) =>
+    ubahData((data) => L.tambahBarang(data, input, randomUUID(), new Date().toISOString()))
+  );
+  tangani('barang:ubah', (id, input) => ubahData((data) => L.ubahBarang(data, id, input)));
+  tangani('barang:hapus', (id) => ubahData((data) => L.hapusBarang(data, id)));
 }
 
 // ---------- Jendela ----------
@@ -265,8 +273,15 @@ app.on('second-instance', () => {
 
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
-  // Aplikasi offline: tolak semua permintaan izin (kamera, notifikasi, dll.).
-  session.defaultSession.setPermissionRequestHandler((_wc, _izin, cb) => cb(false));
+  // Aplikasi sepenuhnya offline: tolak izin (kamera, notifikasi, dll.), matikan
+  // pemeriksa ejaan (yang bisa mengunduh kamus), dan blokir semua permintaan jaringan.
+  const ses = session.defaultSession;
+  ses.setPermissionRequestHandler((_wc, _izin, cb) => cb(false));
+  ses.setSpellCheckerEnabled(false);
+  if (process.platform !== 'darwin') ses.setSpellCheckerLanguages([]);
+  ses.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }, (_d, cb) =>
+    cb({ cancel: true })
+  );
 
   try {
     await muatData();
