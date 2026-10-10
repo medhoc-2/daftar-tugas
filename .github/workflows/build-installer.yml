@@ -1,0 +1,46 @@
+name: Build Installer Catatan Stok
+
+# Membuat installer Windows (.exe) dan menyimpannya sebagai artifact (bukan Release).
+on:
+  push:
+    paths:
+      - 'catatan-stok/**'
+      - '.github/workflows/build-installer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: catatan-stok
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v7
+
+      - name: Pasang Node.js LTS
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: catatan-stok/package-lock.json
+
+      - name: Pasang dependensi
+        run: npm ci
+
+      - name: Jalankan tes
+        run: npm test
+
+      - name: Buat installer
+        run: npm run dist
+
+      - name: Simpan installer sebagai artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Catatan-Stok-Setup
+          path: catatan-stok/dist/*.exe
+          if-no-files-found: error
+          retention-days: 30
