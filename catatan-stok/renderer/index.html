@@ -19,7 +19,8 @@
         <span class="label">Jenis barang</span>
         <strong id="ringkasan-jenis">0</strong>
       </div>
-      <div class="kartu-ringkasan" id="kartu-menipis">
+      <div class="kartu-ringkasan bisa-klik" id="kartu-menipis" role="button" tabindex="0"
+           title="Lihat barang dengan stok menipis">
         <span class="label">Stok menipis</span>
         <strong id="ringkasan-menipis">0</strong>
       </div>
@@ -41,7 +42,27 @@
 
   <main>
     <!-- STOK -->
-    <section class="panel aktif" id="panel-stok" role="tabpanel"></section>
+    <section class="panel aktif" id="panel-stok" role="tabpanel">
+      <div class="kartu">
+        <div class="kepala-kartu">
+          <h2>Stok Barang</h2>
+          <button type="button" class="tombol" id="tombol-ekspor-stok">Export CSV</button>
+        </div>
+        <div class="baris-filter">
+          <label class="isian cari">Cari
+            <input id="stok-cari" type="search" placeholder="Nama barang atau kategori…">
+          </label>
+          <label class="isian">Kategori
+            <select id="stok-kategori"></select>
+          </label>
+          <label class="centang">
+            <input id="stok-menipis" type="checkbox"> Hanya stok menipis
+          </label>
+        </div>
+        <div class="wadah-tabel" id="tabel-stok"></div>
+        <p class="jumlah-baris" id="stok-jumlah"></p>
+      </div>
+    </section>
 
     <!-- TRANSAKSI -->
     <section class="panel" id="panel-transaksi" role="tabpanel">

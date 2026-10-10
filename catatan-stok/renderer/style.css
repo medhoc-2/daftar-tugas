@@ -83,6 +83,8 @@ h2 { font-size: 17px; margin-bottom: 12px; }
 .kartu-ringkasan .label { font-size: 12px; color: var(--teks-redup); }
 .kartu-ringkasan strong { font-size: 22px; line-height: 1.2; }
 .kartu-ringkasan .sub { font-size: 11px; color: var(--teks-redup); }
+.kartu-ringkasan.bisa-klik { cursor: pointer; }
+.kartu-ringkasan.bisa-klik:hover { border-color: #b8c2cc; }
 .kartu-ringkasan.peringatan { background: var(--merah-muda); border-color: #f3b8b1; }
 .kartu-ringkasan.peringatan strong { color: var(--merah); }
 
@@ -166,6 +168,8 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
   margin-bottom: 12px;
 }
 .baris-filter .cari { flex: 1; min-width: 220px; }
+label.centang { display: flex; align-items: center; gap: 6px; min-height: 34px; cursor: pointer; }
+label.centang input { min-height: 0; width: 16px; height: 16px; }
 
 .baris-tombol { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .baris-tombol.rapat { margin-top: 0; }

@@ -359,9 +359,103 @@ $('#form-transaksi').addEventListener('submit', async (e) => {
   }
 });
 
+// ---------- Stok & ringkasan ----------
+
+function renderRingkasan() {
+  const r = L.ringkasan(keadaan.data, L.tanggalHariIni());
+  $('#ringkasan-jenis').textContent = L.formatAngka(r.jenisBarang);
+  $('#ringkasan-menipis').textContent = L.formatAngka(r.menipis);
+  $('#kartu-menipis').classList.toggle('peringatan', r.menipis > 0);
+  $('#ringkasan-hari-ini').textContent = L.formatAngka(r.transaksiHariIni);
+  $('#ringkasan-hari-ini-rinci').textContent = r.transaksiHariIni
+    ? `${L.formatAngka(r.masukHariIni)} masuk, ${L.formatAngka(r.keluarHariIni)} keluar`
+    : '';
+}
+
+function isiPilihanKategori() {
+  const pilih = $('#stok-kategori');
+  const sebelumnya = pilih.value;
+  const ada = L.daftarKategori(keadaan.data);
+  const adaTanpa = keadaan.data.barang.some((b) => !b.kategori);
+  pilih.replaceChildren(
+    el('option', { value: '', text: 'Semua kategori' }),
+    ...ada.map((k) => el('option', { value: k, text: k })),
+    adaTanpa ? el('option', { value: L.TANPA_KATEGORI, text: '(Tanpa kategori)' }) : null,
+  );
+  pilih.value = [...pilih.options].some((o) => o.value === sebelumnya) ? sebelumnya : '';
+}
+
+function filterStokSaatIni() {
+  return {
+    cari: $('#stok-cari').value,
+    kategori: $('#stok-kategori').value,
+    hanyaMenipis: $('#stok-menipis').checked,
+  };
+}
+
+function renderStok() {
+  isiPilihanKategori();
+  const baris = L.daftarStok(keadaan.data, filterStokSaatIni());
+  const wadah = $('#tabel-stok');
+  $('#stok-jumlah').textContent = keadaan.data.barang.length
+    ? `Menampilkan ${L.formatAngka(baris.length)} dari ${L.formatAngka(keadaan.data.barang.length)} barang.`
+    : '';
+  if (!baris.length) {
+    wadah.replaceChildren(el('div', {
+      class: 'kosong',
+      text: keadaan.data.barang.length
+        ? 'Tidak ada barang yang cocok dengan pencarian/filter.'
+        : 'Belum ada barang. Tambahkan barang dulu di tab Barang.',
+    }));
+    return;
+  }
+  wadah.replaceChildren(el('table', {},
+    el('thead', {}, el('tr', {},
+      el('th', { text: 'Nama Barang' }),
+      el('th', { text: 'Kategori' }),
+      el('th', { text: 'Satuan' }),
+      el('th', { class: 'angka', text: 'Stok Saat Ini' }),
+      el('th', { class: 'angka', text: 'Stok Minimum' }),
+      el('th', { text: 'Status' }),
+    )),
+    el('tbody', {}, baris.map((r) => el('tr', { class: r.menipis ? 'menipis' : '' },
+      el('td', { text: r.barang.nama }),
+      el('td', { text: r.barang.kategori || '-' }),
+      el('td', { text: r.barang.satuan }),
+      el('td', { class: 'angka stok', text: L.formatAngka(r.stok) }),
+      el('td', { class: 'angka', text: L.formatAngka(r.barang.stokMinimum) }),
+      el('td', {}, el('span', {
+        class: `lencana ${r.menipis ? 'menipis' : 'aman'}`,
+        text: r.menipis ? 'Stok menipis' : 'Aman',
+      })),
+    ))),
+  ));
+}
+
+$('#stok-cari').addEventListener('input', renderStok);
+$('#stok-kategori').addEventListener('change', renderStok);
+$('#stok-menipis').addEventListener('change', renderStok);
+
+function lihatStokMenipis() {
+  $('#stok-cari').value = '';
+  $('#stok-kategori').value = '';
+  $('#stok-menipis').checked = true;
+  pilihTab('stok');
+  renderStok();
+}
+$('#kartu-menipis').addEventListener('click', lihatStokMenipis);
+$('#kartu-menipis').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    lihatStokMenipis();
+  }
+});
+
 // ---------- Render ----------
 
 function renderSemua() {
+  renderRingkasan();
+  renderStok();
   renderTransaksi();
   renderBarang();
   renderBackup();

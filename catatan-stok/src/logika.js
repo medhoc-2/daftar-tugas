@@ -230,6 +230,41 @@
     return da === db ? 0 : da < db ? 1 : -1;
   }
 
+  // ---------- Halaman stok & ringkasan ----------
+
+  const TANPA_KATEGORI = '__tanpa_kategori__';
+
+  // Stok menipis = stok di bawah stok minimum.
+  function daftarStok(data, filter) {
+    const f = filter || {};
+    const stok = hitungStok(data);
+    const cari = kunciNama(f.cari);
+    return data.barang
+      .map((b) => {
+        const s = stok.get(b.id) || 0;
+        return { barang: b, stok: s, menipis: s < b.stokMinimum };
+      })
+      .filter((r) => {
+        if (cari && !kunciNama(r.barang.nama).includes(cari) && !kunciNama(r.barang.kategori).includes(cari)) return false;
+        if (f.kategori === TANPA_KATEGORI && r.barang.kategori) return false;
+        if (f.kategori && f.kategori !== TANPA_KATEGORI && kunciNama(r.barang.kategori) !== kunciNama(f.kategori)) return false;
+        if (f.hanyaMenipis && !r.menipis) return false;
+        return true;
+      })
+      .sort((a, b) => urutkanNama(a.barang, b.barang));
+  }
+
+  function ringkasan(data, hariIni) {
+    const hari = data.transaksi.filter((t) => t.tanggal === hariIni);
+    return {
+      jenisBarang: data.barang.length,
+      menipis: daftarStok(data).filter((r) => r.menipis).length,
+      transaksiHariIni: hari.length,
+      masukHariIni: hari.filter((t) => t.jenis === 'masuk').length,
+      keluarHariIni: hari.filter((t) => t.jenis === 'keluar').length,
+    };
+  }
+
   return {
     tanggalHariIni,
     formatAngka,
@@ -251,5 +286,8 @@
     tambahTransaksi,
     hapusTransaksi,
     urutkanTransaksiTerbaru,
+    TANPA_KATEGORI,
+    daftarStok,
+    ringkasan,
   };
 });

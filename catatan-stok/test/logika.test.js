@@ -105,3 +105,24 @@ test('hapus transaksi masuk ditolak jika stok jadi minus', () => {
   d = L.hapusTransaksi(d, idMasuk);
   assert.strictEqual(d.transaksi.length, 0);
 });
+
+test('daftar stok: filter, tanda menipis, dan ringkasan', () => {
+  let d = L.tambahBarang(kosong(), { nama: 'Gula', kategori: 'Sembako', satuan: 'kg', stokMinimum: '5' }, 'b1', WAKTU);
+  d = L.tambahBarang(d, { nama: 'Aqua', kategori: 'Minuman', satuan: 'dus', stokMinimum: '2' }, 'b2', WAKTU);
+  d = L.tambahBarang(d, { nama: 'Paku', satuan: 'kg' }, 'b3', WAKTU);
+  d = L.tambahTransaksi(d, { jenis: 'masuk', barangId: 'b2', jumlah: '2', tanggal: HARI }, 'x1', WAKTU, HARI);
+  d = L.tambahTransaksi(d, { jenis: 'masuk', barangId: 'b1', jumlah: '3', tanggal: '2026-10-01' }, 'x2', WAKTU, HARI);
+  const semua = L.daftarStok(d);
+  assert.deepStrictEqual(semua.map((r) => [r.barang.nama, r.stok, r.menipis]), [
+    ['Aqua', 2, false],
+    ['Gula', 3, true],
+    ['Paku', 0, false],
+  ]);
+  assert.deepStrictEqual(L.daftarStok(d, { kategori: 'sembako' }).map((r) => r.barang.id), ['b1']);
+  assert.deepStrictEqual(L.daftarStok(d, { kategori: L.TANPA_KATEGORI }).map((r) => r.barang.id), ['b3']);
+  assert.deepStrictEqual(L.daftarStok(d, { cari: 'MINUM' }).map((r) => r.barang.id), ['b2']);
+  assert.deepStrictEqual(L.daftarStok(d, { hanyaMenipis: true }).map((r) => r.barang.id), ['b1']);
+  assert.deepStrictEqual(L.ringkasan(d, HARI), {
+    jenisBarang: 3, menipis: 1, transaksiHariIni: 1, masukHariIni: 1, keluarHariIni: 0,
+  });
+});
