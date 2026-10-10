@@ -54,3 +54,54 @@ test('barang yang punya transaksi tidak bisa dihapus', () => {
   d.transaksi = [];
   assert.strictEqual(L.hapusBarang(d, 'b1').barang.length, 0);
 });
+
+function dataContoh() {
+  let d = L.tambahBarang(kosong(), { nama: 'Gula', satuan: 'kg', stokMinimum: '5' }, 'b1', WAKTU);
+  d = L.tambahBarang(d, { nama: 'Teh', satuan: 'dus' }, 'b2', WAKTU);
+  return d;
+}
+const HARI = '2026-10-10';
+let urut = 0;
+const trx = (d, jenis, barangId, jumlah, tanggal = HARI) =>
+  L.tambahTransaksi(d, { jenis, barangId, jumlah, tanggal, keterangan: '' }, `t${++urut}`, `2026-10-10T08:00:0${urut % 10}Z`, HARI);
+
+test('stok dihitung dari transaksi masuk dan keluar', () => {
+  let d = dataContoh();
+  d = trx(d, 'masuk', 'b1', '10');
+  d = trx(d, 'masuk', 'b1', '2,5');
+  d = trx(d, 'keluar', 'b1', '0,1');
+  d = trx(d, 'keluar', 'b1', '0,2');
+  assert.strictEqual(L.stokBarang(d, 'b1'), 12.2);
+  assert.strictEqual(L.stokBarang(d, 'b2'), 0);
+});
+
+test('barang keluar melebihi stok ditolak', () => {
+  let d = trx(dataContoh(), 'masuk', 'b1', '10');
+  assert.throws(() => trx(d, 'keluar', 'b1', '11'), /tidak cukup/);
+  d = trx(d, 'keluar', 'b1', '10');
+  assert.strictEqual(L.stokBarang(d, 'b1'), 0);
+  assert.throws(() => trx(d, 'keluar', 'b2', '1'), /tidak cukup/);
+});
+
+test('validasi transaksi', () => {
+  const d = dataContoh();
+  assert.throws(() => trx(d, 'masuk', 'b1', '0'), /lebih dari 0/);
+  assert.throws(() => trx(d, 'masuk', 'b1', '-3'), /lebih dari 0/);
+  assert.throws(() => trx(d, 'masuk', 'b1', 'abc'), /lebih dari 0/);
+  assert.throws(() => trx(d, 'masuk', 'b1', '1,2345'), /3 angka/);
+  assert.throws(() => trx(d, 'masuk', 'tidak-ada', '1'), /Pilih barang/);
+  assert.throws(() => trx(d, 'masuk', 'b1', '1', '2026-02-30'), /Tanggal tidak valid/);
+  assert.throws(() => trx(d, 'masuk', 'b1', '1', '2026-10-11'), /melebihi hari ini/);
+  assert.throws(() => trx(d, 'pinjam', 'b1', '1'), /Jenis/);
+});
+
+test('hapus transaksi masuk ditolak jika stok jadi minus', () => {
+  let d = trx(dataContoh(), 'masuk', 'b1', '10');
+  const idMasuk = d.transaksi[0].id;
+  d = trx(d, 'keluar', 'b1', '4');
+  assert.throws(() => L.hapusTransaksi(d, idMasuk), /minus/);
+  const idKeluar = d.transaksi[1].id;
+  d = L.hapusTransaksi(d, idKeluar);
+  d = L.hapusTransaksi(d, idMasuk);
+  assert.strictEqual(d.transaksi.length, 0);
+});

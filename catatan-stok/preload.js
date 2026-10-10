@@ -15,4 +15,6 @@ contextBridge.exposeInMainWorld('api', {
   tambahBarang: panggil('barang:tambah'),
   ubahBarang: panggil('barang:ubah'),
   hapusBarang: panggil('barang:hapus'),
+  tambahTransaksi: panggil('transaksi:tambah'),
+  hapusTransaksi: panggil('transaksi:hapus'),
 });

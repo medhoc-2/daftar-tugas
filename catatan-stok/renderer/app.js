@@ -144,6 +144,7 @@ function renderBarang() {
   isiDatalist('#daftar-satuan', L.daftarSatuan(data));
 
   const cari = L.kunciNama($('#barang-cari').value);
+  const stok = L.hitungStok(data);
   const jumlahTransaksi = new Map();
   for (const t of data.transaksi) jumlahTransaksi.set(t.barangId, (jumlahTransaksi.get(t.barangId) || 0) + 1);
   const baris = data.barang
@@ -163,6 +164,7 @@ function renderBarang() {
       el('th', { text: 'Nama Barang' }),
       el('th', { text: 'Kategori' }),
       el('th', { text: 'Satuan' }),
+      el('th', { class: 'angka', text: 'Stok' }),
       el('th', { class: 'angka', text: 'Stok Minimum' }),
       el('th', { class: 'angka', text: 'Transaksi' }),
       el('th', { class: 'aksi', text: '' }),
@@ -173,6 +175,7 @@ function renderBarang() {
         el('td', { text: b.nama }),
         el('td', { text: b.kategori || '-' }),
         el('td', { text: b.satuan }),
+        el('td', { class: 'angka', text: L.formatAngka(stok.get(b.id) || 0) }),
         el('td', { class: 'angka', text: L.formatAngka(b.stokMinimum) }),
         el('td', { class: 'angka', text: L.formatAngka(nTrans) }),
         el('td', { class: 'aksi' },
@@ -222,9 +225,144 @@ $('#form-barang').addEventListener('submit', async (e) => {
 $('#tombol-batal-edit').addEventListener('click', () => aturModeFormBarang(null));
 $('#barang-cari').addEventListener('input', renderBarang);
 
+// ---------- Transaksi ----------
+
+let jenisTransaksi = 'masuk';
+
+function pilihJenis(jenis) {
+  jenisTransaksi = jenis;
+  document.querySelectorAll('.pilihan-jenis button').forEach((b) => {
+    b.classList.toggle('aktif', b.dataset.jenis === jenis);
+    b.setAttribute('aria-pressed', b.dataset.jenis === jenis ? 'true' : 'false');
+  });
+  $('#tombol-simpan-transaksi').textContent = jenis === 'masuk' ? 'Simpan Barang Masuk' : 'Simpan Barang Keluar';
+  renderInfoStok();
+}
+
+function renderInfoStok() {
+  const b = L.cariBarang(keadaan.data, $('#transaksi-barang').value);
+  const info = $('#transaksi-info-stok');
+  if (!b) {
+    info.replaceChildren();
+    return;
+  }
+  const stok = L.stokBarang(keadaan.data, b.id);
+  info.replaceChildren(
+    'Stok saat ini: ',
+    el('strong', { text: `${L.formatAngka(stok)} ${b.satuan}` }),
+    stok < b.stokMinimum ? el('span', { class: 'lencana menipis', text: ' di bawah minimum ' }) : null,
+  );
+}
+
+// Satu baris tabel transaksi (dipakai di tab Transaksi dan Riwayat).
+function barisTransaksi(t, barangPeta, denganHapus) {
+  const b = barangPeta.get(t.barangId);
+  return el('tr', {},
+    el('td', { text: L.formatTanggal(t.tanggal) }),
+    el('td', {}, el('span', { class: `lencana ${t.jenis}`, text: L.JENIS[t.jenis] })),
+    el('td', { text: b ? b.nama : '(barang terhapus)' }),
+    el('td', { class: 'angka', text: L.formatAngka(t.jumlah) }),
+    el('td', { text: b ? b.satuan : '' }),
+    el('td', { text: t.keterangan || '-' }),
+    denganHapus
+      ? el('td', { class: 'aksi' },
+        el('button', { class: 'tombol kecil bahaya', type: 'button', text: 'Hapus', onclick: () => hapusTransaksi(t) }))
+      : null,
+  );
+}
+
+function tabelTransaksi(daftar, denganHapus) {
+  const barangPeta = new Map(keadaan.data.barang.map((b) => [b.id, b]));
+  return el('table', {},
+    el('thead', {}, el('tr', {},
+      el('th', { text: 'Tanggal' }),
+      el('th', { text: 'Jenis' }),
+      el('th', { text: 'Barang' }),
+      el('th', { class: 'angka', text: 'Jumlah' }),
+      el('th', { text: 'Satuan' }),
+      el('th', { text: 'Keterangan' }),
+      denganHapus ? el('th', { class: 'aksi', text: '' }) : null,
+    )),
+    el('tbody', {}, daftar.map((t) => barisTransaksi(t, barangPeta, denganHapus))),
+  );
+}
+
+async function hapusTransaksi(t) {
+  const b = L.cariBarang(keadaan.data, t.barangId);
+  const setuju = await layanan.konfirmasi({
+    judul: 'Hapus Transaksi',
+    pesan: `Hapus transaksi barang ${t.jenis} ini?`,
+    detail: `${L.formatTanggal(t.tanggal)} — ${b ? b.nama : ''} — ${L.formatAngka(t.jumlah)} ${b ? b.satuan : ''}` +
+      (t.keterangan ? ` (${t.keterangan})` : '') + '\nStok akan dihitung ulang otomatis.',
+    tombolYa: 'Hapus',
+    bahaya: true,
+  });
+  if (!setuju) return;
+  tanganiHasil(await layanan.hapusTransaksi(t.id), 'Transaksi dihapus.');
+}
+
+function renderTransaksi() {
+  const data = keadaan.data;
+  const adaBarang = data.barang.length > 0;
+  $('#transaksi-tanpa-barang').hidden = adaBarang;
+  $('#form-transaksi').hidden = !adaBarang;
+
+  const tanggal = $('#transaksi-tanggal');
+  tanggal.max = L.tanggalHariIni();
+  if (!tanggal.value) tanggal.value = L.tanggalHariIni();
+
+  // Isi pilihan barang, pertahankan pilihan sebelumnya.
+  const pilih = $('#transaksi-barang');
+  const sebelumnya = pilih.value;
+  const stok = L.hitungStok(data);
+  pilih.replaceChildren(
+    el('option', { value: '', text: '— Pilih barang —' }),
+    ...[...data.barang].sort(L.urutkanNama).map((b) =>
+      el('option', { value: b.id, text: `${b.nama} (stok ${L.formatAngka(stok.get(b.id) || 0)} ${b.satuan})` })),
+  );
+  pilih.value = L.cariBarang(data, sebelumnya) ? sebelumnya : '';
+  renderInfoStok();
+
+  const terakhir = [...data.transaksi]
+    .sort((a, b) => ((a.dibuat || '') < (b.dibuat || '') ? 1 : -1))
+    .slice(0, 10);
+  const wadah = $('#tabel-transaksi-terakhir');
+  if (!terakhir.length) {
+    wadah.replaceChildren(el('div', { class: 'kosong', text: 'Belum ada transaksi.' }));
+  } else {
+    wadah.replaceChildren(tabelTransaksi(terakhir, false));
+  }
+}
+
+document.querySelectorAll('.pilihan-jenis button').forEach((b) => {
+  b.addEventListener('click', () => pilihJenis(b.dataset.jenis));
+});
+$('#transaksi-barang').addEventListener('change', renderInfoStok);
+
+$('#form-transaksi').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = {
+    jenis: jenisTransaksi,
+    tanggal: $('#transaksi-tanggal').value,
+    barangId: $('#transaksi-barang').value,
+    jumlah: $('#transaksi-jumlah').value,
+    keterangan: $('#transaksi-keterangan').value,
+  };
+  const b = L.cariBarang(keadaan.data, input.barangId);
+  const pesan = b
+    ? `Barang ${input.jenis} dicatat: ${b.nama} ${L.formatAngka(L.parseAngka(input.jumlah))} ${b.satuan}.`
+    : '';
+  if (tanganiHasil(await layanan.tambahTransaksi(input), pesan)) {
+    $('#transaksi-jumlah').value = '';
+    $('#transaksi-keterangan').value = '';
+    $('#transaksi-jumlah').focus();
+  }
+});
+
 // ---------- Render ----------
 
 function renderSemua() {
+  renderTransaksi();
   renderBarang();
   renderBackup();
   renderLayarRusak();

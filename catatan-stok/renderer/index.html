@@ -44,7 +44,42 @@
     <section class="panel aktif" id="panel-stok" role="tabpanel"></section>
 
     <!-- TRANSAKSI -->
-    <section class="panel" id="panel-transaksi" role="tabpanel"></section>
+    <section class="panel" id="panel-transaksi" role="tabpanel">
+      <div class="kartu">
+        <div class="kepala-kartu">
+          <h2>Catat Transaksi</h2>
+          <div class="pilihan-jenis" role="group" aria-label="Jenis transaksi">
+            <button type="button" data-jenis="masuk" class="aktif">Barang Masuk</button>
+            <button type="button" data-jenis="keluar">Barang Keluar</button>
+          </div>
+        </div>
+        <p class="kosong" id="transaksi-tanpa-barang" hidden>
+          Belum ada barang. Tambahkan barang dulu di tab <strong>Barang</strong>.
+        </p>
+        <form id="form-transaksi" class="form-grid" autocomplete="off" novalidate>
+          <label class="isian">Tanggal
+            <input id="transaksi-tanggal" type="date" required>
+          </label>
+          <label class="isian lebar">Barang
+            <select id="transaksi-barang" required></select>
+          </label>
+          <label class="isian">Jumlah
+            <input id="transaksi-jumlah" inputmode="decimal" required placeholder="0">
+          </label>
+          <label class="isian lebar">Keterangan
+            <input id="transaksi-keterangan" maxlength="200" placeholder="mis. dari Toko Maju / untuk cabang A">
+          </label>
+          <div class="baris-tombol rapat">
+            <button type="submit" class="tombol utama" id="tombol-simpan-transaksi">Simpan Barang Masuk</button>
+          </div>
+        </form>
+        <p class="info-stok" id="transaksi-info-stok"></p>
+      </div>
+      <div class="kartu">
+        <h2>Input Terakhir</h2>
+        <div class="wadah-tabel" id="tabel-transaksi-terakhir"></div>
+      </div>
+    </section>
 
     <!-- RIWAYAT -->
     <section class="panel" id="panel-riwayat" role="tabpanel"></section>

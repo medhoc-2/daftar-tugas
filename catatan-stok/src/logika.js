@@ -149,6 +149,87 @@
     return baru;
   }
 
+  // ---------- Transaksi & stok ----------
+
+  const JENIS = { masuk: 'Masuk', keluar: 'Keluar' };
+
+  // Stok = total masuk - total keluar. Dihitung dalam satuan seperseribu
+  // supaya penjumlahan desimal (mis. 0,1 + 0,2) tetap tepat.
+  function hitungStok(data) {
+    const seribu = new Map(data.barang.map((b) => [b.id, 0]));
+    for (const t of data.transaksi) {
+      const n = Math.round(t.jumlah * 1000) * (t.jenis === 'keluar' ? -1 : 1);
+      seribu.set(t.barangId, (seribu.get(t.barangId) || 0) + n);
+    }
+    const stok = new Map();
+    for (const [id, n] of seribu) stok.set(id, n / 1000);
+    return stok;
+  }
+
+  function stokBarang(data, barangId) {
+    return hitungStok(data).get(barangId) || 0;
+  }
+
+  function tanggalValid(iso) {
+    const m = POLA_TANGGAL.exec(iso || '');
+    if (!m) return false;
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return d.getFullYear() === Number(m[1]) && d.getMonth() === Number(m[2]) - 1 && d.getDate() === Number(m[3]);
+  }
+
+  function tambahTransaksi(data, input, id, waktu, hariIni) {
+    const jenis = input && input.jenis;
+    if (!JENIS[jenis]) gagal('Jenis transaksi tidak dikenal.');
+    const barang = cariBarang(data, input.barangId);
+    if (!barang) gagal('Pilih barang terlebih dahulu.');
+    const tanggal = input.tanggal;
+    if (!tanggalValid(tanggal)) gagal('Tanggal tidak valid.');
+    if (tanggal > hariIni) gagal('Tanggal tidak boleh melebihi hari ini.');
+    const jumlah = parseAngka(input.jumlah);
+    if (!Number.isFinite(jumlah) || jumlah <= 0) gagal('Jumlah harus berupa angka lebih dari 0.');
+    if (bulatkan(jumlah) !== jumlah) gagal('Jumlah maksimal 3 angka di belakang koma.');
+    const keterangan = rapikan(input.keterangan);
+    if (keterangan.length > 200) gagal('Keterangan terlalu panjang (maksimal 200 karakter).');
+    if (jenis === 'keluar') {
+      const stok = stokBarang(data, barang.id);
+      if (jumlah > stok) {
+        gagal(
+          `Stok "${barang.nama}" tidak cukup. Stok saat ini ${formatAngka(stok)} ${barang.satuan}, ` +
+            `diminta keluar ${formatAngka(jumlah)} ${barang.satuan}.`
+        );
+      }
+    }
+    const baru = salin(data);
+    baru.transaksi.push({ id, tanggal, barangId: barang.id, jenis, jumlah, keterangan, dibuat: waktu });
+    return baru;
+  }
+
+  function hapusTransaksi(data, id) {
+    const t = data.transaksi.find((x) => x.id === id);
+    if (!t) gagal('Transaksi tidak ditemukan.');
+    const baru = salin(data);
+    baru.transaksi = baru.transaksi.filter((x) => x.id !== id);
+    if (t.jenis === 'masuk') {
+      const barang = cariBarang(data, t.barangId);
+      const sisa = stokBarang(baru, t.barangId);
+      if (sisa < 0) {
+        gagal(
+          `Transaksi ini tidak bisa dihapus karena stok "${barang.nama}" akan menjadi minus ` +
+            `(${formatAngka(sisa)} ${barang.satuan}). Hapus dulu transaksi barang keluar yang terkait.`
+        );
+      }
+    }
+    return baru;
+  }
+
+  // Terbaru dulu: tanggal transaksi, lalu waktu input.
+  function urutkanTransaksiTerbaru(a, b) {
+    if (a.tanggal !== b.tanggal) return a.tanggal < b.tanggal ? 1 : -1;
+    const da = a.dibuat || '';
+    const db = b.dibuat || '';
+    return da === db ? 0 : da < db ? 1 : -1;
+  }
+
   return {
     tanggalHariIni,
     formatAngka,
@@ -163,5 +244,12 @@
     tambahBarang,
     ubahBarang,
     hapusBarang,
+    JENIS,
+    hitungStok,
+    stokBarang,
+    tanggalValid,
+    tambahTransaksi,
+    hapusTransaksi,
+    urutkanTransaksiTerbaru,
   };
 });

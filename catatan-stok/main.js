@@ -197,6 +197,13 @@ function daftarkanIpc() {
   );
   tangani('barang:ubah', (id, input) => ubahData((data) => L.ubahBarang(data, id, input)));
   tangani('barang:hapus', (id) => ubahData((data) => L.hapusBarang(data, id)));
+
+  tangani('transaksi:tambah', (input) =>
+    ubahData((data) =>
+      L.tambahTransaksi(data, input, randomUUID(), new Date().toISOString(), tanggalLokal())
+    )
+  );
+  tangani('transaksi:hapus', (id) => ubahData((data) => L.hapusTransaksi(data, id)));
 }
 
 // ---------- Jendela ----------
