@@ -1,0 +1,16 @@
+# Dependensi
+node_modules/
+
+# Hasil build / installer (jangan pernah di-commit)
+dist/
+out/
+*.exe
+*.blockmap
+*.nsis.7z
+builder-debug.yml
+builder-effective-config.yaml
+
+# Lain-lain
+*.log
+.DS_Store
+Thumbs.db

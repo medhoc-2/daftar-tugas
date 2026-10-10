@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catatan Stok</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="kepala">
+    <div class="judul-aplikasi">
+      <span class="logo" aria-hidden="true"></span>
+      <h1>Catatan Stok</h1>
+    </div>
+    <section class="ringkasan" aria-label="Ringkasan">
+      <div class="kartu-ringkasan">
+        <span class="label">Jenis barang</span>
+        <strong id="ringkasan-jenis">0</strong>
+      </div>
+      <div class="kartu-ringkasan" id="kartu-menipis">
+        <span class="label">Stok menipis</span>
+        <strong id="ringkasan-menipis">0</strong>
+      </div>
+      <div class="kartu-ringkasan">
+        <span class="label">Transaksi hari ini</span>
+        <strong id="ringkasan-hari-ini">0</strong>
+        <span class="sub" id="ringkasan-hari-ini-rinci"></span>
+      </div>
+    </section>
+  </header>
+
+  <nav class="tab" role="tablist">
+    <button role="tab" data-tab="stok" class="aktif">Stok</button>
+    <button role="tab" data-tab="transaksi">Transaksi</button>
+    <button role="tab" data-tab="riwayat">Riwayat</button>
+    <button role="tab" data-tab="barang">Barang</button>
+    <button role="tab" data-tab="backup">Backup</button>
+  </nav>
+
+  <main>
+    <!-- STOK -->
+    <section class="panel aktif" id="panel-stok" role="tabpanel"></section>
+
+    <!-- TRANSAKSI -->
+    <section class="panel" id="panel-transaksi" role="tabpanel"></section>
+
+    <!-- RIWAYAT -->
+    <section class="panel" id="panel-riwayat" role="tabpanel"></section>
+
+    <!-- BARANG -->
+    <section class="panel" id="panel-barang" role="tabpanel"></section>
+
+    <!-- BACKUP -->
+    <section class="panel" id="panel-backup" role="tabpanel">
+      <div class="kartu">
+        <h2>Lokasi Data</h2>
+        <p>Semua data disimpan di komputer ini, tanpa internet.</p>
+        <dl class="info-lokasi">
+          <dt>File data</dt><dd id="lokasi-file">-</dd>
+          <dt>Folder backup otomatis</dt><dd id="lokasi-backup">-</dd>
+          <dt>Backup otomatis</dt><dd id="info-backup">-</dd>
+        </dl>
+        <p class="catatan">Backup otomatis dibuat setiap kali aplikasi dibuka (maksimal satu per hari) dan
+          hanya 30 backup terbaru yang disimpan.</p>
+        <div class="baris-tombol">
+          <button class="tombol" id="tombol-buka-folder">Buka Folder Data</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Layar jika data.json rusak -->
+  <div class="layar-rusak" id="layar-rusak" hidden>
+    <div class="kartu">
+      <h2>Data tidak bisa dibaca</h2>
+      <p>File data Catatan Stok rusak atau tidak bisa dibuka, sehingga aplikasi belum bisa dipakai.
+        File tersebut <strong>tidak ditimpa</strong>.</p>
+      <p class="pesan-galat" id="rusak-pesan"></p>
+      <p id="rusak-backup-info"></p>
+      <div class="baris-tombol">
+        <button class="tombol utama" id="rusak-pulihkan-terakhir">Pulihkan dari Backup Terakhir</button>
+        <button class="tombol" id="rusak-pilih-file">Pilih File Backup…</button>
+        <button class="tombol" id="rusak-buka-folder">Buka Folder Data</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="notifikasi" id="notifikasi" role="status" aria-live="polite"></div>
+
+  <script src="../src/logika.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

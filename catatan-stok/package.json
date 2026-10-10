@@ -1,0 +1,19 @@
+{
+  "name": "catatan-stok",
+  "productName": "Catatan Stok",
+  "version": "1.0.0",
+  "description": "Aplikasi desktop sederhana untuk mencatat stok, barang masuk, dan barang keluar (offline).",
+  "author": "Catatan Stok",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3"
+  }
+}
