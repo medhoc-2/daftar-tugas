@@ -10,10 +10,58 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test",
+    "ikon": "node scripts/buat-ikon.js",
     "dist": "electron-builder --win nsis --x64 --publish never"
   },
   "devDependencies": {
     "electron": "44.7.0",
     "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "id.catatanstok.app",
+    "productName": "Catatan Stok",
+    "copyright": "Catatan Stok",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "publish": null,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Catatan Stok",
+      "uninstallDisplayName": "Catatan Stok",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerLanguages": [
+        "id_ID"
+      ],
+      "artifactName": "Catatan-Stok-Setup-${version}.${ext}"
+    }
   }
 }
